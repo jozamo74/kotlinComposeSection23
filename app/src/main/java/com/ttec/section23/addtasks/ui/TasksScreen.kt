@@ -2,6 +2,7 @@ package com.ttec.section23.addtasks.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -65,11 +67,16 @@ fun TasksScreen( viewModel: TasksViewModel ) {
 @Composable
 fun ItemTask(taskModel: TaskModel, viewModel: TasksViewModel) {
     Card(
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .pointerInput(Unit){
+                detectTapGestures(onLongPress = {
+                    viewModel.onItemRemove(taskModel)
+                })
+            }
+
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
