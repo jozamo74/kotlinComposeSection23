@@ -7,7 +7,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ttec.section23.addtasks.domain.AddTaskUseCase
+import com.ttec.section23.addtasks.domain.DeleteTaskUseCase
 import com.ttec.section23.addtasks.domain.GetTasksUseCase
+import com.ttec.section23.addtasks.domain.UpdateTaskUseCase
 import com.ttec.section23.addtasks.ui.TasksUiState.Error
 import com.ttec.section23.addtasks.ui.TasksUiState.Success
 import com.ttec.section23.addtasks.ui.model.TaskModel
@@ -23,6 +25,8 @@ import javax.inject.Inject
 @HiltViewModel
 class TasksViewModel @Inject constructor(
     private val addTaskUseCase: AddTaskUseCase,
+    private val updateTaskUseCase: UpdateTaskUseCase,
+    private val deleteTaskUseCase: DeleteTaskUseCase,
     getTasksUseCase: GetTasksUseCase
 ): ViewModel() {
 
@@ -42,7 +46,7 @@ class TasksViewModel @Inject constructor(
 
     fun onTasksCreated(task: String) {
         _showDialog.value = false
-        _tasks.add(TaskModel(task = task))
+//        _tasks.add(TaskModel(task = task))
         Log.i("JZM", "TASK: $task")
         viewModelScope.launch {
             addTaskUseCase(TaskModel(task = task))
@@ -54,15 +58,15 @@ class TasksViewModel @Inject constructor(
     }
 
     fun onCheckBoxSelected(taskModel: TaskModel) {
-        val index = _tasks.indexOf(taskModel)
-        _tasks[index] = _tasks[index].let {
-            it.copy(selected = !it.selected)
+        viewModelScope.launch {
+            updateTaskUseCase(taskModel.copy(selected = !taskModel.selected))
         }
     }
 
     fun onItemRemove(taskModel: TaskModel) {
-        val task = _tasks.find { it.id == taskModel.id }
-        _tasks.remove(task)
+        viewModelScope.launch {
+            deleteTaskUseCase(taskModel)
+        }
     }
 
 

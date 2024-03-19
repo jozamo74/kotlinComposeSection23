@@ -1,6 +1,5 @@
 package com.ttec.section23.addtasks.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -20,8 +19,8 @@ import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -31,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,29 +38,47 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.ttec.section23.addtasks.ui.model.TaskModel
 
 
 //@Preview
 @Composable
 fun TasksScreen( viewModel: TasksViewModel ) {
-
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val showDialog: Boolean by viewModel.showDialog.observeAsState(false)
-
-    Box(
-        modifier = Modifier.fillMaxSize()
+    
+    val uiState by produceState<TasksUiState>(
+        initialValue = TasksUiState.Loading,
+        key1 = lifecycle,
+        key2 = viewModel
     ) {
-        AddTasksDialog(
-            show = showDialog,
-            onDismiss = { viewModel.onDialogClose() },
-            onTaskAdded = { viewModel.onTasksCreated(it) })
-        FabDialog(Modifier.align(Alignment.BottomEnd), viewModel)
-        TaskList(viewModel)
+        lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED) {
+            viewModel.uiState.collect{ value = it}
+        }
     }
+
+    when (uiState) {
+        TasksUiState.Loading -> CircularProgressIndicator()
+        is TasksUiState.Success -> {
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                AddTasksDialog(
+                    show = showDialog,
+                    onDismiss = { viewModel.onDialogClose() },
+                    onTaskAdded = { viewModel.onTasksCreated(it) })
+                FabDialog(Modifier.align(Alignment.BottomEnd), viewModel)
+                TaskList((uiState as TasksUiState.Success).task, viewModel)
+            }
+        }
+    }
+
 }
 
 
@@ -71,7 +89,7 @@ fun ItemTask(taskModel: TaskModel, viewModel: TasksViewModel) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .pointerInput(Unit){
+            .pointerInput(Unit) {
                 detectTapGestures(onLongPress = {
                     viewModel.onItemRemove(taskModel)
                 })
@@ -97,11 +115,11 @@ fun ItemTask(taskModel: TaskModel, viewModel: TasksViewModel) {
 }
 
 @Composable
-fun TaskList(viewModel: TasksViewModel) {
-    val myTasks: List<TaskModel> = viewModel.tasks
+fun TaskList(tasks: List<TaskModel>, viewModel: TasksViewModel) {
+//    val myTasks: List<TaskModel> = viewModel.tasks
 
     LazyColumn {
-        items(myTasks, key = { it.id }) {task ->
+        items(tasks, key = { it.id }) {task ->
             ItemTask(taskModel = task, viewModel = viewModel )
             
         }
